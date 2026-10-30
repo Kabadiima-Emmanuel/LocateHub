@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LocateHub · Location consent</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="share-bg"><main class="share-card"><div class="brand-mark">L</div><p class="eyebrow">LOCATION-SHARING INVITATION</p><h1>Share your location?</h1>
+{% if unavailable %}<div class="error">This invitation has expired or was revoked. Ask the person who sent it for a new link.</div>{% else %}
+<p class="muted">You have been invited to share your phone's GPS location with the owner of a LocateHub dashboard.</p>
+<div class="consent-details"><h2>Before you continue</h2><ul><li>Your current GPS coordinates and location updates will be sent to the dashboard owner while sharing is active.</li><li>The owner can see your latest location and the route recorded during this sharing session.</li><li>Your browser will ask separately for permission to access your location.</li><li>You can stop sharing at any time using the button on this page.</li></ul></div>
+<label class="consent-check"><input type="checkbox" id="consent"><span>I understand and agree to share my location with the person who sent this invitation.</span></label>
+<button id="start-btn" class="primary full" disabled>Agree and start sharing</button><button id="stop-btn" class="secondary full hidden">Stop sharing</button>
+<div id="share-status" class="message" aria-live="polite">Your location is not being shared.</div><div class="privacy-note">No GPS data is sent before you agree, press Start Sharing, and grant location permission.</div>
+{% endif %}</main>
+{% if not unavailable %}<script>window.LOCATEHUB_TOKEN = {{ invite.token|tojson }};</script><script src="{{ url_for('static', filename='share.js') }}"></script>{% endif %}
+</body></html>

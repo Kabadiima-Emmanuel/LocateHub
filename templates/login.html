@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LocateHub · Sign in</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="login-bg"><main class="login-card">
+<div class="brand-mark">L</div><h1>LocateHub</h1><p class="muted">Private location-sharing dashboard</p>
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+<form method="post"><label for="password">Dashboard password</label><input id="password" name="password" type="password" required autocomplete="current-password"><button class="primary full" type="submit">Sign in</button></form>
+<p class="tiny">Only share location with the knowledge and consent of the phone owner.</p></main></body></html>

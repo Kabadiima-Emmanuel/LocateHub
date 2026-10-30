@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: locatehub
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --threads 4 --timeout 60
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: LOCATEHUB_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: locatehub-db
+          property: connectionString
+      - key: INVITE_HOURS
+        value: "24"
+
+databases:
+  - name: locatehub-db
+    plan: basic-256mb
