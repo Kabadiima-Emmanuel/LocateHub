@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 let map, markers = {}, circles = {}, routeLine = null, selectedId = null;
+let lastDevices = [], clearedLastSeen = null;
 const routeCache = {};
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -41,9 +42,12 @@ async function refreshDevices() {
     if (response.status === 401 || response.redirected) { location.href="/login"; return; }
     if (!response.ok) throw new Error("Unable to load devices.");
     const devices = await response.json();
+    lastDevices = devices;
     renderDevices(devices);
     for (const d of devices) {
-      if (d.lat != null && d.lng != null) {
+      const isNewAfterClear = !clearedLastSeen || d.last_seen !== clearedLastSeen[d.id];
+      if (d.lat != null && d.lng != null && isNewAfterClear) {
+        if (clearedLastSeen) delete clearedLastSeen[d.id];
         const point = [d.lat, d.lng];
         const popup = `<b>${escapeHtml(d.label)}</b><br>${d.sharing ? "Sharing location" : "Last known location"}<br>Accuracy: ${Math.round(d.accuracy || 0)} m<br>${escapeHtml(niceTime(d.last_seen))}`;
         if (!markers[d.id]) markers[d.id] = L.marker(point).addTo(map);
@@ -53,11 +57,24 @@ async function refreshDevices() {
         if (d.sharing && selectedId === d.id && $("follow").checked) map.panTo(point);
       }
     }
-    if (!selectedId) { const live = devices.find(x => x.sharing && x.lat != null); if (live) await showRoute(live.id); }
+    if (!selectedId && !clearedLastSeen) { const live = devices.find(x => x.sharing && x.lat != null); if (live) await showRoute(live.id); }
     if (selectedId && devices.some(d => d.id === selectedId)) await showRoute(selectedId, false);
   } catch (e) {
     $("devices").innerHTML = `<p class="muted">${escapeHtml(e.message)}</p>`;
   }
+}
+function manualRefresh() {
+  // Clear only the map display. Do not call the history-deletion endpoint.
+  clearedLastSeen = Object.fromEntries(lastDevices.map(d => [d.id, d.last_seen]));
+  Object.values(markers).forEach(marker => map.removeLayer(marker));
+  Object.values(circles).forEach(circle => map.removeLayer(circle));
+  markers = {};
+  circles = {};
+  if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
+  selectedId = null;
+  map.setView([0.3476, 32.5825], 7);
+  $("map-status").textContent = "Map cleared. Waiting for new GPS updates.";
+  refreshDevices();
 }
 function renderDevices(devices) {
   if (!devices.length) { $("devices").innerHTML = '<p class="muted">No invitations yet. Create one above to get started.</p>'; return; }
@@ -119,7 +136,7 @@ async function copyInvite(id) {
   }
 }
 $("create-btn").addEventListener("click", createInvitation);
-$("refresh-btn").addEventListener("click", refreshDevices);
+$("refresh-btn").addEventListener("click", manualRefresh);
 $("copy-btn").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText($("share-url").value); $("copy-btn").textContent = "Copied!"; setTimeout(() => $("copy-btn").textContent = "Copy link", 1400); }
   catch (_) { $("share-url").select(); document.execCommand("copy"); }
